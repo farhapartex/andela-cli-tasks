@@ -15,6 +15,9 @@ RUN cd pypi_server && \
     mkdir -p packages && \
     cp dist/vectorops-0.1.0-py3-none-any.whl packages/
 
+RUN mkdir -p /root/data /root/results && \
+    cp /app/targets.json /root/data/targets.json
+
 RUN chmod +x entrypoint.sh
 
 EXPOSE 5328 8080

@@ -5,3 +5,5 @@ pytest
 pytest-asyncio
 pypiserver
 build
+rdkit
+numpy

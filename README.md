@@ -177,6 +177,36 @@ python3 -c "from vectorops import dotproduct; print(dotproduct([1, 1], [0, 1]))"
 
 ---
 
+## 6. Pharmacophore Alignment
+
+**What the problem is**
+
+I needed to dock small molecules into protein pockets without having the actual protein structure. The pocket is described by pharmacophore interaction sites (points in 3D space that want a Donor, Acceptor, Hydrophobe, or Aromatic group nearby) and excluded volumes (spheres where no atom is allowed). For each of five targets, I had to find the best pose of the ligand that fits the pharmacophore and avoids all steric clashes.
+
+**How I solved it**
+
+For each target I generate 200 3D conformers from the SMILES string using RDKit's ETKDGv3 and refine them with MMFF force field. For each conformer I detect chemical features using RDKit's `BaseFeatures.fdef` factory. I then pick the top 4 weighted interaction sites as anchors and try every combination of matching ligand feature positions as anchor-to-site correspondences. For each correspondence set I compute the rigid body transformation using the Kabsch algorithm (SVD-based rotation + translation that minimises RMSD between anchor and feature points). I apply the transform to all atoms, check for steric clashes (atom within 1.1 Å of any exclusion center, which is 1.2 Å radius with 0.1 Å tolerance), and score clash-free poses using a Gaussian score. The best scoring pose across all conformers and all correspondences is written to the output SDF file.
+
+**Time complexity and language**
+
+Python with RDKit and NumPy. Generating conformers is O(C) where C is 200 conformers. For each conformer the alignment tries at most (3 ligand features per anchor)^4 = 81 Kabsch calls, each O(1). So total work per target is O(C × 81 × N) where N is atom count. For the five targets combined this is fast enough to finish in under a minute.
+
+**How to run**
+
+```bash
+python3 pharmacophore_alignment/solution.py
+```
+
+This reads `targets.json` from the project root (or `/root/data/targets.json` in the benchmark environment) and writes one best pose per target to `pharmacophore_alignment/docked_poses.sdf`.
+
+To run tests:
+
+```bash
+pytest pharmacophore_alignment/tests/test_solution.py -v
+```
+
+---
+
 ## Running Everything with Docker
 
 I put all five tasks into a single Docker image. The idea is simple: build once, and the examiner can run any task inside the container without installing anything on their machine.
