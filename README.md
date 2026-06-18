@@ -174,3 +174,76 @@ Verify it works:
 ```bash
 python3 -c "from vectorops import dotproduct; print(dotproduct([1, 1], [0, 1]))"
 ```
+
+---
+
+## Running Everything with Docker
+
+I put all five tasks into a single Docker image. The idea is simple: build once, and the examiner can run any task inside the container without installing anything on their machine.
+
+When the container starts, the gRPC server and the PyPI server both start automatically in the background. Everything else like the library tasks and tests can be run on demand with `docker exec`.
+
+**Why python:3.12-slim**
+
+I used `python:3.12-slim` as the base image for three reasons. First, it comes with Python 3.12 which is what I used to write and test all the code. Second, the slim variant strips out a lot of things that are not needed like documentation and unused locale files, so the image stays smaller. Third, it is Debian-based which means `apt-get` works normally and bash is already installed. That last point matters for the headless terminal task which needs bash to be present to create a PTY session.
+
+**Build the image**
+
+```bash
+docker build -t andela_tasks .
+```
+
+**Start the container**
+
+```bash
+docker run -d -p 5328:5328 -p 8080:8080 --name andela andela_tasks
+```
+
+This starts the container in detached mode. Port 5328 is for the gRPC server and port 8080 is for the PyPI server. Both are available from your machine once the container is running.
+
+**Run all tests at once**
+
+```bash
+docker exec andela pytest /app/tests/ -v
+```
+
+**Run each task in order**
+
+Cancel async tasks:
+
+```bash
+docker exec andela pytest /app/tests/test_run_tasks.py -v
+```
+
+Git leak recovery:
+
+```bash
+docker exec andela pytest /app/tests/test_git_leak_recovery.py -v
+```
+
+Headless terminal:
+
+```bash
+docker exec andela pytest /app/tests/test_headless_terminal.py -v
+```
+
+KV store with gRPC (server is already running inside the container):
+
+```bash
+docker exec andela pytest /app/kv_store_grpc/tests/test_kv_store.py -v
+```
+
+PyPI server (install the package from the running server):
+
+```bash
+docker exec andela pip install --index-url http://localhost:8080/simple vectorops==0.1.0
+docker exec andela python3 -c "from vectorops import dotproduct; print(dotproduct([1, 1], [0, 1]))"
+```
+
+**Enter the container manually**
+
+```bash
+docker exec -it andela bash
+```
+
+From inside you can import any module, run any script, or use the servers directly.

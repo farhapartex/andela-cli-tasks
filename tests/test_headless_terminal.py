@@ -19,6 +19,10 @@ def wait_for(terminal, text, timeout=5.0):
     return False
 
 
+def wait_for_prompt(terminal, timeout=5.0):
+    return wait_for(terminal, "$", timeout) or wait_for(terminal, "#", timeout)
+
+
 def test_terminal_starts_with_bash_prompt(terminal):
     screen = terminal.get_screen()
     assert "$" in screen or "#" in screen
@@ -39,14 +43,14 @@ def test_ctrl_c_interrupts_running_command(terminal):
     terminal.send_keys("sleep 60\n")
     time.sleep(0.2)
     terminal.send_keys("\x03")
-    assert wait_for(terminal, "$")
+    assert wait_for_prompt(terminal)
 
 
 def test_ctrl_d_exits_interactive_python(terminal):
     terminal.send_keys("python3 -c 'import sys; sys.stdout.write(\"py_ready\\n\"); sys.stdout.flush(); input()'\n")
     assert wait_for(terminal, "py_ready")
     terminal.send_keys("\x04")
-    assert wait_for(terminal, "$")
+    assert wait_for_prompt(terminal)
 
 
 def test_interactive_program_python_repl(terminal):
@@ -55,7 +59,7 @@ def test_interactive_program_python_repl(terminal):
     terminal.send_keys("1 + 1\n")
     assert wait_for(terminal, "2")
     terminal.send_keys("exit()\n")
-    assert wait_for(terminal, "$")
+    assert wait_for_prompt(terminal)
 
 
 def test_environment_variable(terminal):
