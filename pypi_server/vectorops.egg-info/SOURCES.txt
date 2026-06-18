@@ -1,0 +1,6 @@
+pyproject.toml
+vectorops/__init__.py
+vectorops.egg-info/PKG-INFO
+vectorops.egg-info/SOURCES.txt
+vectorops.egg-info/dependency_links.txt
+vectorops.egg-info/top_level.txt
